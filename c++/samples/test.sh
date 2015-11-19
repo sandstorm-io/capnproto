@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 #
-# Quick script that compiles and runs the samples, then cleans up.
+# Quick script that compiles and runs the samples without CMake, then cleans up.
 # Used for release testing.
 
 set -exuo pipefail
@@ -24,3 +24,4 @@ sleep 0.1
 kill %+
 wait %+ || true
 rm calculator-client calculator-server calculator.capnp.c++ calculator.capnp.h /tmp/capnp-calculator-example-$$
+

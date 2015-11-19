@@ -19,7 +19,7 @@
 #       Path to the `capnpc-c++` tool (can be set to override).
 #   CAPNP_INCLUDE_DIRS
 #       Include directories for the library's headers (can be set to override).
-#   CANP_LIBRARIES
+#   CAPNP_LIBRARIES
 #       The Cap'n Proto library paths.
 #   CAPNP_LIBRARIES_LITE
 #       Paths to only the 'lite' libraries.
@@ -30,7 +30,7 @@
 #
 # Example usage:
 #
-#   find_package(CapnProto REQUIRED)
+#   find_package(Capnp REQUIRED)
 #   include_directories(${CAPNP_INCLUDE_DIRS})
 #   add_definitions(${CAPNP_DEFINITIONS})
 #
@@ -72,12 +72,12 @@ function(CAPNP_GENERATE_CPP SOURCES HEADERS)
     endforeach()
   endif()
 
-  if(DEFINED CAPNPC_OUTPUT_DIR)
-    # Prepend a ':' to get the format for the '-o' flag right
-    set(output_dir ":${CAPNPC_OUTPUT_DIR}")
-  else()
-    set(output_dir ":.")
-  endif()
+  if (NOT DEFINED CAPNPC_OUTPUT_DIR)
+    set (CAPNPC_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+  endif()  
+  
+  # Prepend a ':' to get the format for the '-o' flag right
+  set(output_dir ":${CAPNPC_OUTPUT_DIR}")
 
   if(NOT DEFINED CAPNPC_SRC_PREFIX)
     set(CAPNPC_SRC_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -91,20 +91,16 @@ function(CAPNP_GENERATE_CPP SOURCES HEADERS)
     get_filename_component(file_dir "${file_path}" PATH)
 
     # Figure out where the output files will go
-    if (NOT DEFINED CAPNPC_OUTPUT_DIR)
-      set(output_base "${file_path}")
-    else()
-      # Output files are placed in CAPNPC_OUTPUT_DIR, at a location as if they were
-      # relative to CAPNPC_SRC_PREFIX.
-      string(LENGTH "${CAPNPC_SRC_PREFIX}" prefix_len)
-      string(SUBSTRING "${file_path}" 0 ${prefix_len} output_prefix)
-      if(NOT "${CAPNPC_SRC_PREFIX}" STREQUAL "${output_prefix}")
-        message(SEND_ERROR "Could not determine output path for '${schema_file}' ('${file_path}') with source prefix '${CAPNPC_SRC_PREFIX}' into '${CAPNPC_OUTPUT_DIR}'.")
-      endif()
-
-      string(SUBSTRING "${file_path}" ${prefix_len} -1 output_path)
-      set(output_base "${CAPNPC_OUTPUT_DIR}${output_path}")
+    # Output files are placed in CAPNPC_OUTPUT_DIR, at a location as if they were
+    # relative to CAPNPC_SRC_PREFIX.
+    string(LENGTH "${CAPNPC_SRC_PREFIX}" prefix_len)
+    string(SUBSTRING "${file_path}" 0 ${prefix_len} output_prefix)
+    if(NOT "${CAPNPC_SRC_PREFIX}" STREQUAL "${output_prefix}")
+      message(SEND_ERROR "Could not determine output path for '${schema_file}' ('${file_path}') with source prefix '${CAPNPC_SRC_PREFIX}' into '${CAPNPC_OUTPUT_DIR}'.")
     endif()
+
+    string(SUBSTRING "${file_path}" ${prefix_len} -1 output_path)
+    set(output_base "${CAPNPC_OUTPUT_DIR}${output_path}")
 
     add_custom_command(
       OUTPUT "${output_base}.c++" "${output_base}.h"
@@ -180,6 +176,20 @@ find_program(CAPNPC_CXX_EXECUTABLE
   DOC "Capn'n Proto C++ Compiler"
   HINTS "${PKGCONFIG_CAPNP_PREFIX}/bin"
 )
+
+# Check for C++11 and add required compiler flags
+include(C++11)
+CheckCXX11(FATAL_ERROR)
+
+# Check if kj/common.h compiles (indicates all needed C++11 features are available)
+check_cxx_source_compiles(
+  "#include <kj/common.h>
+   int main() {return 0;}"
+  KJ_COMMON_COMPILES
+)
+if(NOT KJ_COMMON_COMPILES)
+  message (FATAL_ERROR "kj/common.h compile check failed! Your compiler probably doesn't support C++11 enough.")
+endif ()
 
 # Only *require* the include directory, libkj, and libcapnp. If compiling with
 # CAPNP_LITE, nothing else will be found.
