@@ -19,6 +19,7 @@ set(kj_sources_lite
   test-helpers.c++
   units.c++
   encoding.c++
+  miniposix.c++
 )
 set(kj_sources_heavy
   refcount.c++
@@ -63,6 +64,7 @@ set(kj_headers
   time.h
   main.h
   windows-sanity.h
+  miniposix.h
 )
 set(kj-parse_headers
   parse/common.h
@@ -95,9 +97,11 @@ install(FILES ${kj-std_headers} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/kj/std"
 
 set(kj-test_sources
   test.c++
+  test-util.c++
 )
 set(kj-test_headers
   test.h
+  test-util.h
 )
 set(kj-test-compat_headers
   compat/gtest.h
